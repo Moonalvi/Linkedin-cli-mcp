@@ -1,0 +1,31 @@
+# User data directory (lives in %LOCALAPPDATA% — never committed)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+config.json
+browser-profile/
+
+# Build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Test artifacts
+.pytest_cache/
+*.xlsx
+!tests/test_fixture.xlsx
+
+# IDE
+.vscode/
+.idea/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Distribution zip (use GitHub Releases instead)
+*.zip

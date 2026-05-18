@@ -6,9 +6,10 @@ Standalone CLI tool that extracts LinkedIn post analytics by clicking LinkedIn's
 
 1. **Discovers** your LinkedIn posts by scrolling through your activity feed (authenticated)
 2. **Captures** analytics for each post via LinkedIn's Export to XLSX, then parses both sheets (Performance + Demographics)
-3. **Outputs** structured JSON with impressions, reactions, comments, reposts, demographics, and more
-4. **Schedules** follow up scans at 1h, 6h, 24h, 72h, and 7d intervals
-5. **All local.** No backend, no cloud, no data leaves your machine
+3. **Displays** clean per-post analytics cards with impressions, reactions, comments, demographics, and audience breakdowns
+4. **Stores** structured JSON snapshots locally in SQLite for history tracking and integration
+5. **Schedules** follow up scans at 1h, 6h, 24h, 72h, and 7d intervals
+6. **All local.** No backend, no cloud, no data leaves your machine
 
 ## Requirements
 
@@ -72,10 +73,15 @@ If you prefer the command line over the interactive menu:
 | `linkedin-cli login` | Open browser to authenticate with LinkedIn |
 | `linkedin-cli login --check` | Verify existing LinkedIn session is valid |
 | `linkedin-cli discover --limit 25` | Find posts on your profile, store in local DB |
+| `linkedin-cli discover --limit 25 --exact-dates` | Discover with precise date filtering |
+| `linkedin-cli discover --headless` | Discover with no visible browser window |
 | `linkedin-cli import --scan-now` | Discover + scan analytics immediately |
+| `linkedin-cli import --limit 50 --scan-now` | Full import up to 50 posts, scan right after |
 | `linkedin-cli scan` | Process due analytics captures |
 | `linkedin-cli scan --force` | Process ALL pending scans regardless of schedule |
+| `linkedin-cli scan --headless` | Run scans without visible browser window |
 | `linkedin-cli status` | Show queue state and last scan time |
+| `linkedin-cli status --url-only` | Print only the stored profile URL |
 | `linkedin-cli pause` / `resume` | Toggle scanning on/off |
 | `linkedin-cli reset --force --reinit` | Wipe everything and start fresh |
 
@@ -127,17 +133,26 @@ Run `linkedin-cli reset --force --reinit` to delete all of it.
 
 ## Integration
 
-Pipe scanner output into any backend or script:
-
-```bash
-linkedin-cli scan --force | your-ingestion-script
-```
-
-Or call it from Python:
+The scanner stores all analytics as structured JSON in `%LOCALAPPDATA%\LinkedInCLI\scanner.sqlite`. Access it programmatically:
 
 ```python
-import subprocess, json
-result = json.loads(subprocess.check_output(["linkedin-cli", "scan", "--force"]))
+import sqlite3, json
+
+db = sqlite3.connect(rf"{__import__('os').environ['LOCALAPPDATA']}\LinkedInCLI\scanner.sqlite")
+db.row_factory = sqlite3.Row
+snapshots = db.execute("SELECT * FROM snapshots ORDER BY captured_at DESC").fetchall()
+for s in snapshots:
+    payload = json.loads(s["payload"])
+    print(payload["metrics"]["impressions"])
+```
+
+Or use the scanner's own Python modules:
+
+```python
+from scanner.db import init_db, status_summary, due_scans
+init_db()
+summary = status_summary()
+print(summary["pending_scans"], "scans pending")
 ```
 
 ## Risk assessment

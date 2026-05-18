@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 
-APP_DIR = Path(os.environ.get("SOCIO_SCANNER_HOME") or Path(os.environ["LOCALAPPDATA"]) / "Socio" / "LocalScanner")
+APP_DIR = Path(os.environ.get("LINKEDIN_CLI_HOME") or Path(os.environ["LOCALAPPDATA"]) / "LinkedInCLI")
 CONFIG_PATH = APP_DIR / "config.json"
 DB_PATH = APP_DIR / "scanner.sqlite"
 BROWSER_PROFILE_DIR = APP_DIR / "browser-profile"

@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 call .venv\Scripts\activate.bat
 echo.
 echo =============================================
-echo   Socio Scanner
+echo   LinkedIn CLI
 echo =============================================
 echo.
 echo   1. Discover + Scan (fresh import)
@@ -20,26 +20,26 @@ if "%choice%"=="4" goto pause_menu
 goto end
 
 :import
-socio-scanner status --url-only > "%TEMP%\socio_url.txt" 2>nul
-set /p PROFILE_URL=<"%TEMP%\socio_url.txt"
-del "%TEMP%\socio_url.txt" 2>nul
+linkedin-cli status --url-only > "%TEMP%\linkedin_cli_url.txt" 2>nul
+set /p PROFILE_URL=<"%TEMP%\linkedin_cli_url.txt"
+del "%TEMP%\linkedin_cli_url.txt" 2>nul
 if not "%PROFILE_URL%"=="" (
     echo Profile URL: %PROFILE_URL%
-    socio-scanner import --linkedin-profile-url "%PROFILE_URL%" --scan-now
+    linkedin-cli import --linkedin-profile-url "%PROFILE_URL%" --scan-now
 ) else (
     echo No profile URL stored yet. Run login.bat first to auto-detect it.
     echo.
     set /p url="Or enter LinkedIn profile URL now: "
-    if not "!url!"=="" socio-scanner import --linkedin-profile-url "!url!" --scan-now
+    if not "!url!"=="" linkedin-cli import --linkedin-profile-url "!url!" --scan-now
 )
 goto end
 
 :scan
-socio-scanner scan --force
+linkedin-cli scan --force
 goto end
 
 :status
-socio-scanner status
+linkedin-cli status
 goto end
 
 :pause_menu
@@ -47,8 +47,8 @@ echo.
 echo   1. Pause
 echo   2. Resume
 set /p pchoice="Choose (1-2): "
-if "%pchoice%"=="1" socio-scanner pause --paused
-if "%pchoice%"=="2" socio-scanner resume
+if "%pchoice%"=="1" linkedin-cli pause --paused
+if "%pchoice%"=="2" linkedin-cli resume
 goto end
 
 :end

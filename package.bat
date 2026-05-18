@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 echo.
 echo =============================================
-echo   Socio Scanner - Package for Distribution
+echo   LinkedIn CLI - Package for Distribution
 echo =============================================
 echo.
 
@@ -33,7 +33,7 @@ if %errorlevel% equ 0 (
 if %LEAK%==1 (
     echo.
     echo Packaging ABORTED. Fix the issues above, then retry.
-    echo   - Data files: run "socio-scanner reset --force" to wipe
+    echo   - Data files: run "linkedin-cli reset --force" to wipe
     echo   - Hard-coded paths: replace with auto-detection or relative paths
     pause
     exit /b 1
@@ -41,10 +41,10 @@ if %LEAK%==1 (
 echo   Clean - no data leaks or hard-coded paths.
 
 echo [2/3] Creating zip package...
-call .venv\Scripts\python.exe -c "import zipfile, os, sys; from pathlib import Path; version = __import__('scanner').__version__; zip_name = f'socio-scanner-v{version}.zip'; dirs = ['scanner', 'tests']; files = ['login.bat', 'scan.bat', 'setup.bat', 'package.bat', 'requirements.txt', 'pyproject.toml', 'README.md', '.gitignore']; zf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED); [zf.write(str(f)) for d in dirs for f in sorted(Path(d).rglob('*')) if f.is_file() and '__pycache__' not in str(f)]; [zf.write(f) for f in files if Path(f).exists()]; zf.close(); size = Path(zip_name).stat().st_size; print(f'  Created {zip_name} ({size} bytes)'); zr = zipfile.ZipFile(zip_name, 'r'); names = zr.namelist(); print(f'  {len(names)} files'); bad = [n for n in names if (n.endswith('.xlsx') and 'test_fixture' not in n) or n.endswith('.sqlite') or n.endswith('config.json') or 'browser-profile' in n]; print('  PASS: Clean zip' if not bad else f'  FAIL: Data leaks: {bad}'); zr.close()"
+call .venv\Scripts\python.exe -c "import zipfile, os, sys; from pathlib import Path; version = __import__('scanner').__version__; zip_name = f'linkedin-cli-v{version}.zip'; dirs = ['scanner', 'tests']; files = ['login.bat', 'scan.bat', 'setup.bat', 'package.bat', 'requirements.txt', 'pyproject.toml', 'README.md', '.gitignore']; zf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED); [zf.write(str(f)) for d in dirs for f in sorted(Path(d).rglob('*')) if f.is_file() and '__pycache__' not in str(f)]; [zf.write(f) for f in files if Path(f).exists()]; zf.close(); size = Path(zip_name).stat().st_size; print(f'  Created {zip_name} ({size} bytes)'); zr = zipfile.ZipFile(zip_name, 'r'); names = zr.namelist(); print(f'  {len(names)} files'); bad = [n for n in names if (n.endswith('.xlsx') and 'test_fixture' not in n) or n.endswith('.sqlite') or n.endswith('config.json') or 'browser-profile' in n]; print('  PASS: Clean zip' if not bad else f'  FAIL: Data leaks: {bad}'); zr.close()"
 
 echo [3/3] Final safety scan...
-call .venv\Scripts\python.exe -c "import zipfile; zf = zipfile.ZipFile('socio-scanner-v' + __import__('scanner').__version__ + '.zip', 'r'); content = b''; [content := content + zf.read(n) for n in zf.namelist() if n.endswith(('.py', '.bat', '.toml', '.md'))]; text = content.decode('utf-8', errors='ignore'); hardcoded = [line.strip() for line in text.splitlines() if 'C:\\\\Users\\\\' in line or 'C:\\Users\\' in line]; print('  WARNING: hard-coded paths found in zip:' if hardcoded else '  PASS: No hard-coded paths in zip.'); [print(f'    {h[:120]}') for h in hardcoded[:5]]; zf.close()"
+call .venv\Scripts\python.exe -c "import zipfile; zf = zipfile.ZipFile('linkedin-cli-v' + __import__('scanner').__version__ + '.zip', 'r'); content = b''; [content := content + zf.read(n) for n in zf.namelist() if n.endswith(('.py', '.bat', '.toml', '.md'))]; text = content.decode('utf-8', errors='ignore'); hardcoded = [line.strip() for line in text.splitlines() if 'C:\\\\Users\\\\' in line or 'C:\\Users\\' in line]; print('  WARNING: hard-coded paths found in zip:' if hardcoded else '  PASS: No hard-coded paths in zip.'); [print(f'    {h[:120]}') for h in hardcoded[:5]]; zf.close()"
 
 echo.
 echo Ready. Send the zip file to your user.

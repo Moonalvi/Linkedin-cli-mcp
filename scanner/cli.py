@@ -29,7 +29,7 @@ def _short_urn(value: Any) -> str:
 
 
 def _scanner_log(stage: str, **fields: Any) -> None:
-    parts = [f"[SocioScanner] {stage}"]
+    parts = [f"[LinkedinCLI] {stage}"]
     for key, value in fields.items():
         safe_value = str(value or "").replace("\n", " ")[:180]
         parts.append(f"{key}={safe_value}")
@@ -393,12 +393,12 @@ def _run_scans_with_scanner(scanner, config: ScannerConfig, *, limit: int, force
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="socio-scanner",
+        prog="linkedin-cli",
         description="Standalone LinkedIn post analytics scanner. "
                     "Discovers posts, captures analytics via XLSX export, "
                     "and outputs structured JSON — all locally, no backend required.",
     )
-    parser.add_argument("--version", action="version", version=f"socio-scanner {__version__}")
+    parser.add_argument("--version", action="version", version=f"linkedin-cli {__version__}")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("init", help="Initialize local scanner database").set_defaults(func=cmd_init)

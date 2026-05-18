@@ -3,9 +3,9 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "socio-scanner"
+name = "linkedin-cli"
 version = "0.2.0"
-description = "Standalone LinkedIn post analytics scanner — extracts XLSX exports from LinkedIn analytics pages"
+description = "Standalone LinkedIn post analytics CLI — extracts XLSX exports from LinkedIn analytics pages"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-socio-scanner = "scanner.cli:main"
+linkedin-cli = "scanner.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["scanner*"]

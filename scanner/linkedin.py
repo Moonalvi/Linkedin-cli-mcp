@@ -394,7 +394,7 @@ def _short_urn(value: Any) -> str:
 
 
 def _scanner_log(stage: str, **fields: Any) -> None:
-    parts = [f"[SocioScanner] {stage}"]
+    parts = [f"[LinkedinCLI] {stage}"]
     for key, value in fields.items():
         safe_value = str(value or "").replace("\n", " ")[:180]
         parts.append(f"{key}={safe_value}")
@@ -585,7 +585,7 @@ class LinkedinScanner:
         if btn is None:
             return None
 
-        tmp_dir = _tempfile.mkdtemp(prefix="socio_xlsx_")
+        tmp_dir = _tempfile.mkdtemp(prefix="linkedin_cli_xlsx_")
         tmp_path = _os.path.join(tmp_dir, "analytics_export.xlsx")
 
         try:
@@ -662,7 +662,7 @@ class LinkedinScanner:
 
             return {
                 "urn": urn,
-                "schema_version": "socio_linkedin_snapshot_v2",
+                "schema_version": "linkedin_cli_snapshot_v2",
                 "capture": {
                     "capture_mode": "export",
                     "capture_timestamp": _now_iso(),

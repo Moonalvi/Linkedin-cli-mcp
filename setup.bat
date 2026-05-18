@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo =============================================
-echo   Socio Scanner - One-Time Setup
+echo   LinkedIn CLI - One-Time Setup
 echo =============================================
 echo.
 
@@ -74,7 +74,7 @@ if %errorlevel% neq 0 (
 )
 
 echo [4/4] Initializing scanner database...
-socio-scanner init
+linkedin-cli init
 if %errorlevel% neq 0 (
     echo ERROR: Failed to initialize scanner
     pause

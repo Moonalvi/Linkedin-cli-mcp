@@ -6,8 +6,11 @@ import re
 import shutil as _shutil
 import tempfile as _tempfile
 import time as _time
+import warnings as _warnings
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
+_warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 try:
     from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -396,7 +399,9 @@ def _short_urn(value: Any) -> str:
 def _scanner_log(stage: str, **fields: Any) -> None:
     parts = [f"[LinkedinCLI] {stage}"]
     for key, value in fields.items():
-        safe_value = str(value or "").replace("\n", " ")[:180]
+        if value is None or value == "":
+            continue
+        safe_value = str(value).replace("\n", " ")[:180]
         parts.append(f"{key}={safe_value}")
     print(" ".join(parts), flush=True)
 
@@ -918,9 +923,6 @@ class LinkedinScanner:
                     del result["post_meta"]
                     results.append(result)
                     self.limiter.on_success()
-                    _scanner_log("capture_done", urn=_short_urn(urn),
-                                  impressions=result["metrics"].get("impressions"),
-                                  reactions=result["metrics"].get("reactions"))
                 except Exception as e:
                     err_msg = str(e)
                     if "SKIP_REPOST" in err_msg:

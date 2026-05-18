@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import time
 from typing import Any
 
 from . import __version__
@@ -31,7 +29,9 @@ def _short_urn(value: Any) -> str:
 def _scanner_log(stage: str, **fields: Any) -> None:
     parts = [f"[LinkedinCLI] {stage}"]
     for key, value in fields.items():
-        safe_value = str(value or "").replace("\n", " ")[:180]
+        if value is None or value == "":
+            continue
+        safe_value = str(value).replace("\n", " ")[:180]
         parts.append(f"{key}={safe_value}")
     print(" ".join(parts), flush=True)
 
@@ -44,12 +44,75 @@ def _print_section(title: str) -> None:
     print(f"{'=' * PRINT_WIDTH}")
 
 
-def _print_payload(payload: dict[str, Any]) -> None:
-    print(json.dumps(payload, indent=2, default=str))
-
-
 def _print_summary_row(label: str, value: Any) -> None:
     print(f"  {label:.<40} {value}")
+
+
+def _print_capture_card(cap: dict, index: int, total: int) -> None:
+    """Print a single-post analytics card in clean human-readable format."""
+    post = cap.get("post", {}) if isinstance(cap.get("post"), dict) else {}
+    metrics = cap.get("metrics", {}) if isinstance(cap.get("metrics"), dict) else {}
+    demographics = cap.get("demographics") if isinstance(cap.get("demographics"), list) else []
+
+    title = str(post.get("post_title") or "")
+    urn = str(post.get("canonical_urn") or "")
+    published = str(post.get("published_at") or "")[:10]
+    top_job = str(post.get("top_job_title") or "")
+    top_loc = str(post.get("top_location") or "")
+    top_ind = str(post.get("top_industry") or "")
+
+    impressions = metrics.get("impressions")
+    reactions = metrics.get("reactions")
+    comments = metrics.get("comments")
+    reposts = metrics.get("reposts")
+    members = metrics.get("members_reached")
+    saves = metrics.get("saves")
+    sends = metrics.get("sends")
+    eng_rate = metrics.get("engagement_rate")
+
+    hr = "-" * 64
+    print(f"\n{hr}")
+    print(f"  Post {index} of {total}")
+    print(f"{hr}")
+    print(f"  URN:         {urn}")
+    if title:
+        print(f"  Title:       {title[:100]}{'...' if len(title) > 100 else ''}")
+    print(f"  Published:   {published}")
+
+    audience_parts = [p for p in [top_job, top_loc, top_ind] if p]
+    if audience_parts:
+        print(f"  Audience:    {chr(32).join(audience_parts)}")
+
+    print(f"\n  {'Metrics':-^56}")
+    if impressions is not None:
+        print(f"  {'Impressions:':>24} {impressions:>8,}")
+    if reactions is not None:
+        print(f"  {'Reactions:':>24} {reactions:>8,}")
+    if comments is not None:
+        print(f"  {'Comments:':>24} {comments:>8,}")
+    if reposts is not None:
+        print(f"  {'Reposts:':>24} {reposts:>8,}")
+    if members is not None:
+        print(f"  {'Members reached:':>24} {members:>8,}")
+    if saves is not None:
+        print(f"  {'Saves:':>24} {saves:>8,}")
+    if sends is not None:
+        print(f"  {'Sends:':>24} {sends:>8,}")
+    if eng_rate is not None:
+        print(f"  {'Engagement rate:':>24} {eng_rate:>7.1%}")
+
+    if demographics:
+        print(f"\n  {'Demographics':-^56}")
+        max_cat = max(len(d.get("category", "")) for d in demographics)
+        max_val = max(len(d.get("value", "")) for d in demographics)
+        for d in demographics:
+            cat = d.get("category", "")
+            val = d.get("value", "")
+            pct = d.get("percentage")
+            pct_str = f"{pct:.1f}%" if pct is not None else ""
+            print(f"  {cat:<{max_cat + 2}} {val:<{max_val + 2}} {pct_str:>6}")
+
+    print(f"{hr}")
 
 
 # -- CLI commands -----------------------------------------------------
@@ -122,7 +185,10 @@ def cmd_discover(args: argparse.Namespace) -> int:
         _print_section("Discovery Results")
         print(f"  Discovered: {len(posts)} posts")
         if posts:
-            _print_payload({"discovered": len(posts), "posts": posts})
+            for i, p in enumerate(posts):
+                urn = str(p.get("canonical_urn") or "")
+                title = str(p.get("post_title") or p.get("post_text") or "")[:80]
+                print(f"  {i+1:>3}. {urn[-16:]}  {title}{'...' if len(title) >= 80 else ''}")
         return 0
     finally:
         scanner.shutdown()
@@ -147,9 +213,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
     _print_summary_row("Next due at", summary.get("next_due_at"))
     _print_summary_row("Last scan at", summary.get("last_scan_at"))
     if result.get("captures"):
-        print(f"\n  -- Capture payloads ({len(result['captures'])} total) --")
-        for cap in result["captures"]:
-            _print_payload(cap)
+        for i, cap in enumerate(result["captures"]):
+            _print_capture_card(cap, i + 1, len(result["captures"]))
     return 0
 
 
@@ -193,9 +258,8 @@ def cmd_import(args: argparse.Namespace) -> int:
         _print_summary_row("Last scan at", summary.get("last_scan_at"))
 
         if result.get("captures"):
-            print(f"\n  -- Capture payloads ({len(result['captures'])} total) --")
-            for cap in result["captures"]:
-                _print_payload(cap)
+            for i, cap in enumerate(result["captures"]):
+                _print_capture_card(cap, i + 1, len(result["captures"]))
         return 0
     finally:
         scanner.shutdown()
@@ -307,23 +371,11 @@ def _run_scans(config: ScannerConfig, *, limit: int, headless: bool, force: bool
             urn = str(scan["canonical_urn"])
             if urn in result_by_urn:
                 payload = result_by_urn[urn]
-                snapshot_id = record_snapshot(urn, scan["snapshot_window"], payload)
+                record_snapshot(urn, scan["snapshot_window"], payload)
                 mark_due_done(int(scan["id"]))
                 completed += 1
                 captures.append(payload)
-
-                metrics = payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
-                _scanner_log(
-                    "capture_done",
-                    snapshot_id=snapshot_id,
-                    urn=_short_urn(urn),
-                    impressions=metrics.get("impressions"),
-                    reactions=metrics.get("reactions"),
-                    comments=metrics.get("comments"),
-                    reposts=metrics.get("reposts"),
-                )
             else:
-                # Check if it was skipped (repost) or failed
                 fail_reason = f"No result for {urn}"
                 mark_due_failed(int(scan["id"]), fail_reason)
                 log("error", f"Scan failed for {urn}: {fail_reason}")
@@ -364,21 +416,10 @@ def _run_scans_with_scanner(scanner, config: ScannerConfig, *, limit: int, force
         urn = str(scan["canonical_urn"])
         if urn in result_by_urn:
             payload = result_by_urn[urn]
-            snapshot_id = record_snapshot(urn, scan["snapshot_window"], payload)
+            record_snapshot(urn, scan["snapshot_window"], payload)
             mark_due_done(int(scan["id"]))
             completed += 1
             captures.append(payload)
-
-            metrics = payload.get("metrics") if isinstance(payload.get("metrics"), dict) else {}
-            _scanner_log(
-                "capture_done",
-                snapshot_id=snapshot_id,
-                urn=_short_urn(urn),
-                impressions=metrics.get("impressions"),
-                reactions=metrics.get("reactions"),
-                comments=metrics.get("comments"),
-                reposts=metrics.get("reposts"),
-            )
         else:
             fail_reason = f"No result for {urn}"
             mark_due_failed(int(scan["id"]), fail_reason)
